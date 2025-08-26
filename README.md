@@ -15,7 +15,7 @@ AI-powered credit card optimization for maximum rewards. Analyzes your purchases
 ### 1. Clone & Setup
 ```bash
 git clone https://github.com/revilo440/switcher.git
-cd switch
+cd switcher
 ```
 
 ### 2. Backend Setup

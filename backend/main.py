@@ -28,6 +28,9 @@ logger = logging.getLogger(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FRONTEND_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "frontend"))
 
+if os.path.isdir(FRONTEND_DIR):
+    app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize database and seed data on startup"""
@@ -57,10 +60,6 @@ app.add_middleware(
 
 # Include API routers
 app.include_router(optimization.router, prefix="/api", tags=["optimization"])
-
-# Serve frontend files
-if os.path.exists(FRONTEND_DIR):
-    app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
 
 @app.get("/")
 async def read_root():
