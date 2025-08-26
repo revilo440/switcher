@@ -14,8 +14,8 @@ AI-powered credit card optimization for maximum rewards. Analyzes your purchases
 
 ### 1. Clone & Setup
 ```bash
-git clone <your-repo-url>
-cd smartcard
+git clone https://github.com/revilo440/switcher.git
+cd switch
 ```
 
 ### 2. Backend Setup
