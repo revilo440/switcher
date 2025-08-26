@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Switcher - Smart Payment Engine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-dark: #0a0e27;
+            --primary-blue: #1e3a8a;
+            --accent-green: #10b981;
+            --accent-cyan: #06b6d4;
+            --glass-white: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --text-muted: rgba(255, 255, 255, 0.5);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --shadow-glow: 0 0 40px rgba(16, 185, 129, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--primary-dark);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Premium Background */
+        .background-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 0;
+            background: linear-gradient(180deg, #0a0e27 0%, #1e3a8a 100%);
+        }
+
+        .background-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        .glow-orb {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.3;
+            animation: orbFloat 20s ease-in-out infinite;
+        }
+
+        .glow-orb-1 {
+            background: radial-gradient(circle, #10b981 0%, transparent 70%);
+            top: -300px;
+            left: -300px;
+        }
+
+        .glow-orb-2 {
+            background: radial-gradient(circle, #06b6d4 0%, transparent 70%);
+            bottom: -300px;
+            right: -300px;
+            animation-delay: -10s;
+        }
+
+        @keyframes orbFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -30px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+
+        /* Main Container */
+        .app-container {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Premium Header */
+        .header {
+            padding: 24px 32px;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: white;
+            font-size: 1.2rem;
+            margin-right: 12px;
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.4),
+                        0 4px 12px rgba(6, 182, 212, 0.2);
+        }
+
+        .logo-text {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+        }
+
+        .logo-subtitle {
+            font-size: 0.75rem;
+            color: var(--accent-cyan);
+            font-weight: 400;
+            letter-spacing: 0.5px;
+            opacity: 0.8;
+        }
+
+        .header-stats {
+            display: flex;
+            gap: 32px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--accent-green);
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 32px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 48px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            font-size: 2.5em;
+            font-weight: 800;
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            margin-bottom: 40px;
+            font-size: 1.1em;
+            font-weight: 400;
+        }
+
+        .ai-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 24px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        .ai-badge::before {
+            content: '●';
+            animation: blink 1s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* Input Section */
+        .input-section {
+            margin-bottom: 48px;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 18px 24px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            font-size: 16px;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        input[type="text"]::placeholder {
+            color: var(--text-muted);
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--accent-green);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+
+        .analyze-button {
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
+            color: white;
+            border: none;
+            padding: 18px 36px;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .analyze-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .analyze-button:hover::before {
+            left: 100%;
+        }
+
+        .analyze-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(16, 185, 129, 0.4);
+        }
+
+        .analyze-button:active {
+            transform: translateY(0);
+        }
+
+        .analyze-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Example Queries */
+        .example-queries {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .example-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-right: 8px;
+        }
+
+        .example-chip {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px 18px;
+            border-radius: 24px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid var(--glass-border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .example-chip::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .example-chip:hover::before {
+            left: 100%;
+        }
+
+        .example-chip:hover {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--accent-green);
+            border-color: var(--accent-green);
+            transform: translateY(-2px);
+        }
+
+        /* AI Processing Pipeline */
+        .ai-pipeline {
+            display: none;
+            margin: 48px 0;
+            padding: 32px;
+            background: rgba(16, 185, 129, 0.05);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 20px;
+        }
+
+        .ai-pipeline.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .pipeline-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .pipeline-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--accent-green);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .pipeline-stages {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .pipeline-stage {
+            position: relative;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .pipeline-stage.active {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: var(--accent-green);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+        }
+
+        .pipeline-stage.completed {
+            border-color: var(--accent-green);
+        }
+
+        .stage-icon {
+            width: 32px;
+            height: 32px;
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+            font-size: 18px;
+        }
+
+        .pipeline-stage.active .stage-icon {
+            background: var(--accent-green);
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        .pipeline-stage.completed .stage-icon {
+            background: var(--accent-green);
+        }
+
+        .stage-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .stage-status {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .pipeline-stage.active .stage-status {
+            color: var(--accent-green);
+        }
+
+        .pipeline-stage.completed .stage-status {
+            color: var(--accent-green);
+        }
+
+        /* Progress Bar */
+        .progress-bar {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-green), var(--accent-cyan));
+            border-radius: 2px;
+            width: 0;
+            transition: width 0.5s ease;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+        }
+
+        /* Loading Spinner */
+        .loading {
+            display: none;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        /* Demo Toggle */
+        .demo-toggle {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .toggle-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: .4s;
+            border-radius: 34px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--accent-green);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+
+        /* Demo Buttons */
+        .demo-section {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(16, 185, 129, 0.05);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 12px;
+            display: none;
+        }
+
+        .demo-section.active {
+            display: block;
+        }
+
+        .demo-title {
+            color: var(--accent-green);
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .demo-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+        }
+
+        .demo-btn {
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+        }
+
+        .demo-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .demo-btn-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .demo-btn-desc {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        
+        /* Input Section Styles */
+        .input-section {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .input-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        .input-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #e2e8f0;
+            margin: 0 0 10px 0;
+            background: linear-gradient(135deg, #10b981, #06b6d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .input-subtitle {
+            font-size: 0.95rem;
+            color: #94a3b8;
+            margin: 0;
+        }
+        
+        .input-wrapper {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 8px;
+        }
+        
+        #queryInput {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #e2e8f0;
+            font-size: 1rem;
+            padding: 12px 16px;
+            outline: none;
+        }
+        
+        #queryInput::placeholder {
+            color: #64748b;
+        }
+        
+        .analyze-button {
+            background: linear-gradient(135deg, #10b981, #06b6d4);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+        
+        .analyze-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+        }
+        
+        .analyze-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+    </style>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Background -->
+    <div class="background-container">
+        <div class="background-grid"></div>
+        <div class="glow-orb glow-orb-1"></div>
+        <div class="glow-orb glow-orb-2"></div>
+    </div>
+
+    <!-- Main App Container -->
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">S</div>
+                    <div>
+                        <div class="logo-text">Switcher</div>
+                        <div class="logo-subtitle">Smart Payment Engine</div>
+                    </div>
+                </div>
+                <div class="header-stats">
+                    <div class="demo-toggle">
+                        <label class="toggle-label">Demo Mode</label>
+                        <label class="switch">
+                            <input type="checkbox" id="demoMode">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="container">
+                <!-- Input Section -->
+                <div class="input-section">
+                    <div class="input-header">
+                        <h2 class="input-title">Optimize Your Next Purchase</h2>
+                        <p class="input-subtitle">Describe your transaction and I'll find the perfect card to maximize your rewards</p>
+                    </div>
+                    <div class="input-wrapper">
+                        <input 
+                            type="text" 
+                            id="queryInput" 
+                            placeholder="Try: 'buying coffee at Starbucks for $9' or 'grocery shopping $120 at Whole Foods'"
+                            autocomplete="off"
+                        >
+                        <button id="analyzeBtn" class="analyze-button">Analyze Transaction</button>
+                    </div>
+                    
+                    <!-- Demo Section -->
+                    <div id="demoSection" class="demo-section">
+                        <div class="demo-title">Try Demo Scenarios</div>
+                        <div class="demo-buttons">
+                            <button class="demo-btn" data-scenario="coffee">
+                                <div class="demo-btn-title">☕ Coffee</div>
+                                <div class="demo-btn-desc">$5.50 at Peet's Coffee</div>
+                            </button>
+                            <button class="demo-btn" data-scenario="grocery">
+                                <div class="demo-btn-title">🛒 Groceries</div>
+                                <div class="demo-btn-desc">$120 at Whole Foods</div>
+                            </button>
+                            <button class="demo-btn" data-scenario="travel">
+                                <div class="demo-btn-title">✈️ Travel</div>
+                                <div class="demo-btn-desc">$2000 Europe trip</div>
+                            </button>
+                            <button class="demo-btn" data-scenario="gas">
+                                <div class="demo-btn-title">⛽ Gas</div>
+                                <div class="demo-btn-desc">$45 at Shell</div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Processing Pipeline -->
+                <div id="aiPipeline" class="ai-pipeline">
+                    <div class="pipeline-header">
+                        <div class="pipeline-title">🤖 AI Processing Pipeline</div>
+                    </div>
+                    <div class="pipeline-stages">
+                        <div class="pipeline-stage" data-stage="parse">
+                            <div class="stage-icon">📝</div>
+                            <div class="stage-name">Parse</div>
+                            <div class="stage-status">Understanding transaction...</div>
+                        </div>
+                        <div class="pipeline-stage" data-stage="research">
+                            <div class="stage-icon">🔍</div>
+                            <div class="stage-name">Research</div>
+                            <div class="stage-status">Searching market data...</div>
+                        </div>
+                        <div class="pipeline-stage" data-stage="analyze">
+                            <div class="stage-icon">📊</div>
+                            <div class="stage-name">Analyze</div>
+                            <div class="stage-status">Calculating rewards...</div>
+                        </div>
+                        <div class="pipeline-stage" data-stage="recommend">
+                            <div class="stage-icon">💳</div>
+                            <div class="stage-name">Recommend</div>
+                            <div class="stage-status">Finding best match...</div>
+                        </div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill"></div>
+                    </div>
+                </div>
+
+                <!-- Results Section -->
+                <div id="results" class="results">
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
