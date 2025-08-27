@@ -28,6 +28,14 @@ logger = logging.getLogger(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FRONTEND_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "frontend"))
 
+# Create FastAPI app
+app = FastAPI(
+    title="Smart Payment Optimization Engine",
+    description="AI-powered credit card optimization for maximum rewards",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
 if os.path.isdir(FRONTEND_DIR):
     app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
 
@@ -40,14 +48,6 @@ async def lifespan(app: FastAPI):
     logger.info("Database initialized and seeded")
     yield
     logger.info("Shutting down Smart Payment Engine...")
-
-# Create FastAPI app
-app = FastAPI(
-    title="Smart Payment Optimization Engine",
-    description="AI-powered credit card optimization for maximum rewards",
-    version="1.0.0",
-    lifespan=lifespan
-)
 
 # Configure CORS for frontend
 app.add_middleware(
