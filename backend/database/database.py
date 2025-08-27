@@ -1,19 +1,24 @@
 """
 Database configuration and initialization
 """
-from sqlalchemy import create_engine, Column, String, Float, Integer, Boolean, DateTime, Text, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session, relationship
-from datetime import datetime
-import json
 import os
+import json
 import logging
+from datetime import datetime
+
+from sqlalchemy import create_engine, Column, String, Float, Integer, Boolean, DateTime, Text, ForeignKey
+from sqlalchemy.orm import declarative_base, sessionmaker, relationship
+from sqlalchemy.exc import IntegrityError
 
 logger = logging.getLogger(__name__)
 
 # Database configuration
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./payment_optimizer.db")
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+
+engine_kwargs = {}
+if DATABASE_URL.startswith("sqlite"):
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+engine = create_engine(DATABASE_URL, **engine_kwargs)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -62,14 +67,9 @@ def init_db():
     logger.info("Database tables created successfully")
 
 def seed_demo_data():
-    """Seed database with demo credit cards"""
+    """Seed database with demo credit cards (idempotent and race-safe)"""
     db = SessionLocal()
     try:
-        # Check if data already exists
-        if db.query(Card).count() > 0:
-            logger.info("Database already seeded")
-            return
-        
         # Demo cards with realistic reward structures
         demo_cards = [
             {
@@ -176,11 +176,21 @@ def seed_demo_data():
                 })
             }
         ]
-        
-        # Insert demo cards
+
+        inserted_cards = 0
         for card_data in demo_cards:
-            card = Card(**card_data)
-            db.add(card)
+            cid = card_data["id"]
+            try:
+                if db.get(Card, cid) is None:
+                    db.add(Card(**card_data))
+                    db.commit()
+                    inserted_cards += 1
+            except IntegrityError:
+                db.rollback()
+                logger.info(f"Card '{cid}' already present; skipping...")
+            except Exception as e:
+                db.rollback()
+                logger.error(f"Error inserting card '{cid}': {e}")
         
         # Add some demo transactions
         demo_transactions = [
@@ -206,16 +216,27 @@ def seed_demo_data():
                 "reward_earned": 1.35
             }
         ]
-        
-        for trans_data in demo_transactions:
-            transaction = Transaction(**trans_data)
-            db.add(transaction)
-        
-        db.commit()
-        logger.info(f"Seeded {len(demo_cards)} demo cards and {len(demo_transactions)} transactions")
-        
+
+        inserted_txns = 0
+        for t in demo_transactions:
+            #only add if recommended card exists
+            if db.get(Card, t["recommended_card_id"]) is None:
+                logger.info(f"Recommended card '{t['recommended_card_id']}' not found; skipping transaction...")
+                continue
+            try:
+                db.add(Transaction(**t))
+                db.commit()
+                inserted_txns += 1
+            except IntegrityError:
+                db.rollback()
+                logger.info(f"Transaction '{t['merchant']}' already present; skipping...")
+            except Exception as e:
+                db.rollback()
+                logger.error(f"Error inserting transaction '{t['merchant']}': {e}")
+                
+        logger.info(f"Seed complete: {inserted_cards} demo cards and {inserted_txns} demo transactions")
     except Exception as e:
-        logger.error(f"Error seeding database: {e}")
+        logger.error(f"Error seeding demo data: {e}")
         db.rollback()
     finally:
         db.close()
