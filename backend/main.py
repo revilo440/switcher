@@ -28,6 +28,16 @@ logger = logging.getLogger(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FRONTEND_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "frontend"))
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Initialize database and seed data on startup"""
+    logger.info("Starting Smart Payment Engine...")
+    init_db()
+    seed_demo_data()
+    logger.info("Database initialized and seeded")
+    yield
+    logger.info("Shutting down Smart Payment Engine...")
+
 # Create FastAPI app
 app = FastAPI(
     title="Smart Payment Optimization Engine",
@@ -38,16 +48,6 @@ app = FastAPI(
 
 if os.path.isdir(FRONTEND_DIR):
     app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Initialize database and seed data on startup"""
-    logger.info("Starting Smart Payment Engine...")
-    init_db()
-    seed_demo_data()
-    logger.info("Database initialized and seeded")
-    yield
-    logger.info("Shutting down Smart Payment Engine...")
 
 # Configure CORS for frontend
 app.add_middleware(
