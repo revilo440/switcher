@@ -6,9 +6,8 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import Optional, Dict, Any
 import logging
-import json
 
-from database.database import get_db, Card
+from database.database import get_db
 from services.claude_service import ClaudeService
 from services.brave_search_service import BraveSearchService
 from services.card_optimizer import CardOptimizer
@@ -46,6 +45,15 @@ async def optimize_payment(request: OptimizationRequest, db: Session = Depends(g
             return get_fallback_recommendation(request.query)
         
         logger.info(f"✅ CLAUDE PARSED: {parsed_transaction}")
+        
+        # Handle zero or missing amount
+        try:
+            amount_val = float(parsed_transaction.get("amount") or 0)
+        except Exception:
+            amount_val = 0.0
+        zero_amount = amount_val <= 0
+        if zero_amount:
+            logger.info("ℹ️ Zero-amount transaction detected; continuing market analysis and AI recommendation. Financial impact will use $0-safe messaging.")
         
         # Get market analysis
         category = parsed_transaction.get("category", "general")

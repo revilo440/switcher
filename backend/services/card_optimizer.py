@@ -124,6 +124,17 @@ class CardOptimizer:
             reward_amount = best_card.get("reward_amount", 0)
             amount = transaction.get("amount", 0)
             category = transaction.get("category", "general")
+
+            # Explicitly handle zero or missing amount
+            try:
+                amt = float(amount or 0)
+            except Exception:
+                amt = 0.0
+            if amt <= 0:
+                return {
+                    "opportunity_cost": "No rewards on $0 transaction",
+                    "annual_projection": "Enter a non-zero amount to estimate annual savings"
+                }
             
             # Check for recurring purchase indicators
             query = transaction.get('original_query', '').lower()

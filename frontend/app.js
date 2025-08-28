@@ -745,22 +745,36 @@ class Switcher {
         // Smart Insights Section
         const bestCard = recommendation.best_overall || {};
         const rewardAmount = bestCard.reward_amount || bestCard.reward_value || 0;
-        const transactionAmount = Number(transaction.amount || 100);
+        const transactionAmount = Number(transaction.amount || 0);
         const basicCardReward = transactionAmount * this.getBaselineRate();
         const additionalReward = Number(rewardAmount) - basicCardReward;
 
-        html += `
-            <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(6, 182, 212, 0.05)); border: 1px solid rgba(16, 185, 129, 0.2); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-                <h3 style="color: #10b981; margin: 0 0 20px 0; font-size: 1.3rem;">🔎 Smart Insights</h3>
-                <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px; margin-bottom: 12px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="color: #e2e8f0; font-weight: 500;">Per purchase vs. 2% baseline</span>
-                        <span style="color: #10b981; font-weight: 600; font-size: 1.05rem;">+$${Math.max(Number(additionalReward), 0).toFixed(2)}</span>
+        if (transactionAmount > 0) {
+            html += `
+                <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(6, 182, 212, 0.05)); border: 1px solid rgba(16, 185, 129, 0.2); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+                    <h3 style="color: #10b981; margin: 0 0 20px 0; font-size: 1.3rem;">🔎 Smart Insights</h3>
+                    <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px; margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="color: #e2e8f0; font-weight: 500;">Per purchase vs. 2% baseline</span>
+                            <span style="color: #10b981; font-weight: 600; font-size: 1.05rem;">+$${Math.max(Number(additionalReward), 0).toFixed(2)}</span>
+                        </div>
                     </div>
+                    <div style="color: #94a3b8; font-size: 0.92rem;">Best for <strong>${this.capitalize(transaction.category || 'this')}</strong> purchases with ${bestCard.reward_rate || 'enhanced'} rewards${bestCard.signup_bonus ? ` and signup bonus: <strong>${bestCard.signup_bonus}</strong>` : ''}.</div>
                 </div>
-                <div style="color: #94a3b8; font-size: 0.92rem;">Best for <strong>${this.capitalize(transaction.category || 'this')}</strong> purchases with ${bestCard.reward_rate || 'enhanced'} rewards${bestCard.signup_bonus ? ` and signup bonus: <strong>${bestCard.signup_bonus}</strong>` : ''}.</div>
-            </div>
-        `;
+            `;
+        } else {
+            html += `
+                <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(6, 182, 212, 0.05)); border: 1px solid rgba(16, 185, 129, 0.2); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+                    <h3 style="color: #10b981; margin: 0 0 12px 0; font-size: 1.3rem;">🔎 Smart Insights</h3>
+                    <div style="background: rgba(255,255,255,0.03); padding: 14px; border-radius: 8px; margin-bottom: 10px; border-left: 3px solid #64748b;">
+                        <div style="color: #cbd5e1;">
+                            No rewards are earned on $0 or unspecified amounts. We’ve recommended the best card based on market rates. Enter an amount to see exact cash back and comparisons.
+                        </div>
+                    </div>
+                    <div style="color: #94a3b8; font-size: 0.92rem;">Best for <strong>${this.capitalize(transaction.category || 'this')}</strong> purchases with ${bestCard.reward_rate || 'enhanced'} rewards${bestCard.signup_bonus ? ` and signup bonus: <strong>${bestCard.signup_bonus}</strong>` : ''}.</div>
+                </div>
+            `;
+        }
 
         // Savings Projection with adjustable frequency
         html += this.createSavingsProjection(data);
@@ -781,6 +795,7 @@ class Switcher {
         const rewardAmount = card.reward_amount || card.reward_value || 0;
         const rewardRate = card.reward_rate || (txnAmount > 0 && Number(rewardAmount) > 0 ? `${((Number(rewardAmount) / txnAmount) * 100).toFixed(1)}% cash back` : '—');
         const fee = card.annual_fee || 0;
+        const showCashBack = txnAmount > 0 && Number(rewardAmount) > 0;
 
         return `
             <div style="background: ${isBest ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 182, 212, 0.1))' : 'rgba(255,255,255,0.03)'}; 
@@ -795,7 +810,9 @@ class Switcher {
                     </div>
                     <div>
                         <div style="color: #64748b; font-size: 0.85rem; margin-bottom: 4px;">Cash Back</div>
-                        <div style="color: #10b981; font-size: 1.1rem; font-weight: 600;">+$${Number(rewardAmount).toFixed(2)}</div>
+                        ${showCashBack
+                            ? `<div style=\"color: #10b981; font-size: 1.1rem; font-weight: 600;\">+$${Number(rewardAmount).toFixed(2)}</div>`
+                            : `<div style=\"color: #94a3b8; font-size: 1rem;\">—</div><div style=\"color:#64748b; font-size: 0.78rem; margin-top: 4px;\">Enter an amount to see cash back</div>`}
                     </div>
                     <div>
                         <div style="color: #64748b; font-size: 0.85rem; margin-bottom: 4px;">Annual Fee</div>
@@ -826,6 +843,18 @@ class Switcher {
         const annualBest = perPurchaseBest * perYear;
         const annualBaseline = perPurchaseBaseline * perYear;
         const unitLabel = this.formatFrequencyLabel(preset.period, category);
+
+        // If amount is zero, show an informational box instead of projection controls
+        if (!amount || amount <= 0) {
+            return `
+                <div id="savingsProjection" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+                    <h3 style="color: #e2e8f0; margin: 0 0 12px 0; font-size: 1.2rem;">📅 Annual Savings</h3>
+                    <div style="padding: 12px; border-left: 3px solid #64748b; background: rgba(148,163,184,0.08); border-radius: 8px; color: #cbd5e1;">
+                        Enter a non-zero purchase amount to estimate annual savings. We showed a baseline card recommendation for general use.
+                    </div>
+                </div>
+            `;
+        }
 
         return `
             <div id="savingsProjection" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
